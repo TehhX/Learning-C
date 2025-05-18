@@ -1,0 +1,18 @@
+# Ignore files without extensions (COFF executables may have no extension)
+*
+!*.*
+!*/
+
+# Non-Coff exectables
+*.exe
+*.out
+*.o
+
+# VSCode related ignores
+.vscode/
+
+# Build folders
+**/build/
+
+# Ignored files (e.g. myScript_IGN_.sh | _IGN_myNotes.txt). Put _IGN_ at any point in a file name to ignore it
+*_IGN_*
