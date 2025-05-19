@@ -28,3 +28,7 @@ This text file contains notes for this repo. Word wrap should be turned on to vi
 - Strings must be copied to pointers using string.h > strcopy(dest, src).
 
 - All strings end in a null terminator, just like C++. When reserving memory for them, add another character than seemingly required to account for this.
+
+- Strings can be manipulated etc via string.h
+
+- 
