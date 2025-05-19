@@ -4,7 +4,7 @@ This text file contains notes for this repo. Word wrap should be turned on to vi
 
 - printf(...) will print <...> to console. e.g. printf("Hello, world\n") will print "Hello, world" to console, and move to the next line.
 
-- scanf(...) will take input from the console in the same vain as printf(...) outputs
+- scanf(...) will take input from the console in the same vain as printf(...) outputs.
 
 - These are some of the print/scan format specifiers (taken from https://www.programiz.com/c-programming/c-data-types):
       TYPE | FSPEC
@@ -13,7 +13,10 @@ This text file contains notes for this repo. Word wrap should be turned on to vi
      float |    %f
       char |    %c
     double |   %lf
+    string |    %s
 
-- Loops, switches, if/else/else if statements etc work just the same as in C++
+- If '%' should actually be printed, use "%%".
 
-- Functions work just the same as in C++, same prototype and defining etc
+- Loops, switches, if/else/else if statements etc work just the same as in C++.
+
+- Functions work just the same as in C++, same prototype and defining etc.
