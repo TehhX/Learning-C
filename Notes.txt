@@ -20,3 +20,15 @@ This text file contains notes for this repo. Word wrap should be turned on to vi
 - Loops, switches, if/else/else if statements etc work just the same as in C++.
 
 - Functions work just the same as in C++, same prototype and defining etc.
+
+- Arrays and pointers work the same as C++
+
+- Memory can be dynamically allocated/manipulated via malloc, calloc, realloc, and free. Examples in "dynamAlloc.c".
+
+- Strings must be copied to pointers using string.h > strcopy(dest, src).
+
+- All strings end in a null terminator, just like C++. When reserving memory for them, add another character than seemingly required to account for this.
+
+- Strings can be manipulated etc via string.h
+
+- 
