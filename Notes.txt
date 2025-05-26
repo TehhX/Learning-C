@@ -14,6 +14,7 @@ This text file contains notes for this repo. Word wrap should be turned on to vi
       char |    %c
     double |   %lf
     string |    %s
+    size_t |   %zu
 
 - If '%' should actually be printed, use "%%".
 
