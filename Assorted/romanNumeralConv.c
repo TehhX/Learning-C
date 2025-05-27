@@ -3,7 +3,7 @@
 
 int convertNumeral(char chr) {
     switch (chr) {
-    default:            return    0;
+    default:            return   -1;
     case 'I': case 'i': return    1;
     case 'V': case 'v': return    5;
     case 'X': case 'x': return   10;
@@ -33,23 +33,30 @@ inline static void calculateAbsNumeral(int* total, int* buffer, int current) {
     return calculateRelNumeral(total, buffer, current, 0);
 }
 
+#define MAX_CHARS 32
+
 int main() {
-    char userInput[64];
+    char userInput[MAX_CHARS];
 
     printf("Enter numerals: ");
     scanf("%s", userInput);
 
     size_t sizeOfVals = 0;
-    int* values = malloc(0);
+    int values[MAX_CHARS];
 
-    for (size_t i = 0; userInput[i] != '\0'; i++) {
-        values = realloc(values, ++sizeOfVals * sizeof(int));
+// sizeOfVals acts as the index for this loop. Defining 'i' for readability
+#define i sizeOfVals
+    while (userInput[i] != '\0') {
+        int current = convertNumeral(userInput[i]);
 
-        if ((values[i] = convertNumeral(userInput[i])) == 0) {
+        if (current == -1) {
             printf("Bad value entered.\n");
             exit(1);
         }
+        else
+            values[i++] = current;
     }
+#undef i
 
     int total = 0, buffer = 0;
 
@@ -60,6 +67,5 @@ int main() {
 
     printf("Total: %d\n", total);
 
-    free(values);
     return 0;
 }
