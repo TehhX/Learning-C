@@ -3,9 +3,11 @@
 
 #include "node.h"
 
+// TODO
+
 /*
 General declarations:
-----------------------------------
+---------------------
 
 struct stack_t {
     node *head = NULL;
