@@ -15,8 +15,8 @@
     #define MATRIX_DEBUG_WIDHE(INPTR_1, INPTR_2, NAME) if (INPTR_1->width != INPTR_2->width || INPTR_1->height != INPTR_2->height) { puts("WIDTH/HEIGHT MISMATCH IN \"" NAME "\"!"); abort(); }
     #define MATRIX_DEBUG_INLINE
 #else
-    #define MATRIX_DEBUG_MISC(X, Y, Z)  ;
-    #define MATRIX_DEBUG_INPTR(X, Y)    ;
+    #define MATRIX_DEBUG_MISC(X, Y, Z) ;
+    #define MATRIX_DEBUG_INPTR(X, Y) ;
     #define MATRIX_DEBUG_WIDHE(X, Y, Z) ;
     #define MATRIX_DEBUG_INLINE static inline
 #endif
@@ -25,7 +25,7 @@
 typedef struct matrix_t {
     int width;
     int height;
-    double *values;
+    double * values;
 } matrix_t;
 
 // Returns the value at an (x, y) position of a mathematical matrix. Value is a mutable pointer.
@@ -80,6 +80,7 @@ MATRIX_DEBUG_INLINE void matrix_destroy(matrix_t *m) {
     MATRIX_DEBUG_INPTR(m, "matrix_destroy");
 
     free(m->values);
+    m->values = NULL;
 }
 
 // Renders a matrix to stream.
@@ -100,16 +101,16 @@ static inline void matrix_print(const matrix_t *m) {
 }
 
 // Returns the sum of two matrices.
-matrix_t matrix_add(const matrix_t *addend_1, const matrix_t *addend_2) {
-    MATRIX_DEBUG_WIDHE(addend_1, addend_2, "matrix_add");
-    MATRIX_DEBUG_INPTR(addend_1, "matrix_add");
-    MATRIX_DEBUG_INPTR(addend_2, "matrix_add");
+matrix_t matrix_add(const matrix_t *augend, const matrix_t *addend) {
+    MATRIX_DEBUG_WIDHE(augend, addend, "matrix_add");
+    MATRIX_DEBUG_INPTR(augend, "matrix_add");
+    MATRIX_DEBUG_INPTR(addend, "matrix_add");
 
-    matrix_t sum = matrix_create_vals(addend_1->width, addend_1->height, addend_1->values);
+    matrix_t sum = matrix_create_vals(augend->width, augend->height, augend->values);
 
     const int values = sum.width * sum.height;
     for (int i = 0; i < values; ++i)
-        sum.values[i] += addend_2->values[i];
+        sum.values[i] += addend->values[i];
 
     return sum;
 }
@@ -129,7 +130,7 @@ matrix_t matrix_sub(const matrix_t *minuend, const matrix_t *subtrahend) {
     return difference;
 }
 
-// Returns the product of a matrix and constant number
+// Returns the product of a matrix and constant number.
 matrix_t matrix_mult_const(const matrix_t *multiplicand, const double multiplier) {
     MATRIX_DEBUG_INPTR(multiplicand, "matrix_mult_const");
 
@@ -144,58 +145,99 @@ matrix_t matrix_mult_const(const matrix_t *multiplicand, const double multiplier
 
 // Returns the product of two matrices.
 matrix_t matrix_mult(const matrix_t *multiplicand, const matrix_t *multiplier) {
-    puts("CANNOT MULTIPLY YET");
-    exit(EXIT_FAILURE);
-
     MATRIX_DEBUG_INPTR(multiplicand, "matrix_mult");
     MATRIX_DEBUG_INPTR(multiplier, "matrix_mult");
     MATRIX_DEBUG_MISC(multiplicand->width != multiplier->height, "UNDEFINED MULTIPLICATION IN \"matrix_mult\"!", 1);
 
-    matrix_t product = matrix_create_uninitialized(multiplier->width, multiplicand->height);
+    matrix_t product = matrix_create_initialized(multiplier->width, multiplicand->height);
 
-    // TODO
+    for (int finalY = 0; finalY < product.height; ++finalY)
+        for (int finalX = 0; finalX < product.width; ++finalX)
+            for (int takeOffset = 0; takeOffset < multiplicand->width; ++takeOffset)
+                *matrix_get_mut(&product, finalX, finalY) += matrix_get(multiplicand, takeOffset, finalY) * matrix_get(multiplier, finalX, takeOffset);
 
     return product;
 }
 
-// For testing matrix functionality.
+// Returns the quotient of a matrix and a constant number.
+matrix_t matrix_div_const(const matrix_t *dividend, const double divisor) {
+    MATRIX_DEBUG_INPTR(dividend, "matrix_div_const");
+    MATRIX_DEBUG_MISC(!divisor, "DIV BY ZERO IN \"matrix_div_const\"!", 1);
+
+    matrix_t quotient = matrix_create_vals(dividend->width, dividend->height, dividend->values);
+
+    const int values = dividend->width * dividend->height;
+    for (int i = 0; i < values; ++i)
+        quotient.values[i] /= divisor;
+
+    return quotient;
+}
+
+// Returns the quotient of two matrices.
+matrix_t matrix_div(const matrix_t *dividend, const matrix_t *divisor) {
+    MATRIX_DEBUG_INPTR(dividend, "matrix_div");
+    MATRIX_DEBUG_INPTR(divisor, "matrix_div");
+    MATRIX_DEBUG_MISC(dividend->width != divisor->height || divisor->width != divisor->height, "UNDEFINED DIVISION IN \"matrix_div\"!", 1);
+
+    matrix_t quotient = matrix_create_initialized(1, 1);
+
+    // TODO
+
+    return quotient;
+}
+
 int main() {
     matrix_t first = matrix_create_vals(2, 2, (double[]) { 1, 2, 3, 4 });
-    matrix_t second = matrix_create_vals(2, 2, (double[]) { 25, 50, 75, 100 });
-
-    // Print first
     matrix_print(&first);
     putc('\n', stdout);
 
-    // Print second
+    matrix_t second = matrix_create_vals(2, 2, (double[]) { 25, 50, 75, 100 });
     matrix_print(&second);
     putc('\n', stdout);
 
-    // Print sum of first and second
+    matrix_t third = matrix_create_vals(2, 2, (double[]) { 2.1, 3.14, 9.81, 1.7 });
+    matrix_print(&third);
+    putc('\n', stdout);
+
+    matrix_t fourth = matrix_create_vals(2, 3, (double[]) { 4.5, 2.3, 5.5, 3.2, 10.5, 9.2 });
+    matrix_print(&fourth);
+    putc('\n', stdout);
+
     matrix_t sum = matrix_add(&first, &second);
     matrix_print(&sum);
     putc('\n', stdout);
 
-    // Print difference of first and second
+    matrix_t sum_2 = matrix_add(&sum, &third);
+    matrix_destroy(&sum);
+    matrix_print(&sum_2);
+    matrix_destroy(&sum_2);
+    putc('\n', stdout);
+
     matrix_t difference = matrix_sub(&first, &second);
     matrix_print(&difference);
     putc('\n', stdout);
 
-    // Print product of difference and 5
-    matrix_t constProduct = matrix_mult_const(&difference, 5.0f);
+    matrix_t constProduct = matrix_mult_const(&difference, 5.3);
     matrix_print(&constProduct);
-    putc('\n', stdout);
-
-    // Print product of first and second
-    matrix_t product = matrix_mult(&first, &second);
-    matrix_print(&product);
-    putc('\n', stdout);
-
-    // Clean up
-    matrix_destroy(&first);
-    matrix_destroy(&second);
-    matrix_destroy(&sum);
-    matrix_destroy(&difference);
     matrix_destroy(&constProduct);
+    putc('\n', stdout);
+
+    matrix_t product = matrix_mult(&fourth, &third);
+    matrix_destroy(&third);
+    matrix_destroy(&fourth);
+    matrix_print(&product);
     matrix_destroy(&product);
+    putc('\n', stdout);
+
+    matrix_t constQuotient = matrix_div_const(&second, 3.2);
+    matrix_destroy(&second);
+    matrix_print(&constQuotient);
+    matrix_destroy(&constQuotient);
+    putc('\n', stdout);
+
+    matrix_t quotient = matrix_div(&difference, &first);
+    matrix_destroy(&difference);
+    matrix_destroy(&first);
+    matrix_print(&quotient);
+    matrix_destroy(&quotient);
 }
