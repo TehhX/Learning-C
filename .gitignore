@@ -14,5 +14,5 @@
 # Build folders
 **/build/
 
-# Ignored files (e.g. myScript_IGN_.sh | _IGN_myNotes.txt). Put _IGN_ at any point in a file name to ignore it
+# Ignored files (e.g. myScript_IGN.sh). Put _IGN at any point in a file name to ignore it
 *_IGN*
