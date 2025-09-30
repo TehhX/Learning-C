@@ -1,23 +1,46 @@
 #ifndef __GET_PROGRAM_PATH_H
 #define __GET_PROGRAM_PATH_H
 
-// IMPORTANT NOTE: This program has only been tested on Ubuntu and Windows 10-64bit, one machine each. Thus, issues may arise on other systems. Report them using Git's issue system, or fix them with a PR if you feel up to it.
+/*
+Get Program Path (get_program_path()) - AIO Header File and Implementation - Returns a malloc'd string containing the absolute path to the current process (including filename and extension).
 
-#include "stdlib.h" // For _fullpath(...), malloc(...).
+This should always return the full path to the executable, regardless of how it is executed. If the program is /home/myProgram, that's what should *always* be returned.
 
-#if defined(__linux__)
-    #include "linux/limits.h" // For PATH_MAX
-    #include "unistd.h" // For readlink(...)
+Tested/supported OS's:
+    * Linux
+    * Win64
 
-#elif defined(_WIN32) || defined(_WIN64)
-    // TODO: Include PATH_MAX for Windows.
+Implementation tests:
+    * In-folder: Will exectuting the program inside its return correctly, e.g ./program
+    * Out-folder: Will exectuting the program outside its return correctly, e.g Folder/program
+    * Shortcut: Will executing a shortcut to the program return correctly e.g programShortcut.exe
+    * Soft-symlink: Will executing a soft-symlink return correctly e.g ./programLink
+    * PATH Invocation: Will invoking the program from an arbitrary folder
 
+Should any OS fail any tests they and their failed tests will be listed here:
+    * N/A
+*/
+
+#include "stdlib.h" // For malloc(...).
+
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(__windows__)
+    #define __windows__ 1
 #endif
 
-static char *get_program_path(const char * const argv0)
+#if __linux__
+    #include "linux/limits.h" // For PATH_MAX
+    #include "unistd.h" // For readlink(...)
+#elif __windows__
+    #include "libloaderapi.h" // For GetModuleFileNameA(...)
+    #ifndef PATH_MAX
+        #include "minwindef.h" // Contains MAX_PATH
+        #define PATH_MAX MAX_PATH
+    #endif // PATH_MAX
+#endif
+
+static char *get_program_path()
 {
-#if defined(__linux__)
-// Implementation works for: In-folder, out-folder, soft-symlink, PATH invocation
+#if __linux__
     char *path = malloc(PATH_MAX);
 #if defined(__GNUC__)
     #pragma GCC diagnostic ignored "-Wunused-result"
@@ -27,15 +50,23 @@ static char *get_program_path(const char * const argv0)
     #pragma GCC diagnostic pop // "-Wunused-result"
 #endif // __GNUC__
     return path;
+#elif __windows__
+    char *path = malloc(PATH_MAX);
+    const int path_len = GetModuleFileNameA(NULL, path, PATH_MAX) + 1;
+    path = realloc(path, path_len);
 
-#elif defined(_WIN32) || defined(_WIN64)
-// Implementation works for: UNTESTED
-    // Can use GetModuleFileName in lieu of _fullpath, unsure of any difference(s).
-    return _fullpath(malloc(sizeof(char) * PATH_MAX), argv0, PATH_MAX);
+    // Replace '\' with '/' for conformity between OS's:
+    for (int i = 0; path[i]; ++i)
+    {
+        if (path[i] == '\\')
+        {
+            path[i] = '/';
+        }
+    }
 
+    return path;
 #else
     #error Unknown operating system, currently only supports Linux and Windows-32/64.
-
 #endif
 }
 

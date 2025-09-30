@@ -3,9 +3,9 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-int main(int argc, char **argv)
+int main()
 {
-    char *path = get_program_path(argv[0]);
+    char *path = get_program_path();
 
     puts(path);
 
