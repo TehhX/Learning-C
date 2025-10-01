@@ -1,3 +1,4 @@
+#define GPP_DELIM '/'
 #include "get_program_path.h"
 
 #include "stdio.h"
