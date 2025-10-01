@@ -6,10 +6,6 @@
 int main()
 {
     char *path = get_program_path();
-
     puts(path);
-
     free(path);
-
-    return 0;
 }

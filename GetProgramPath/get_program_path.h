@@ -8,24 +8,22 @@ This should always return the full path to the executable, regardless of how it 
 
 Tested/supported OS's:
     * Linux
-    * Win64
+    * Windows 10
 
 Implementation tests:
     * In-folder: Will exectuting the program inside its return correctly, e.g ./program
     * Out-folder: Will exectuting the program outside its return correctly, e.g Folder/program
     * Shortcut: Will executing a shortcut to the program return correctly e.g programShortcut.exe
     * Soft-symlink: Will executing a soft-symlink return correctly e.g ./programLink
-    * PATH Invocation: Will invoking the program from an arbitrary folder
+    * PATH invocation: Will invoking the program from an arbitrary folder return correctly e.g program
 
 Should any OS fail any tests they and their failed tests will be listed here:
     * N/A
 */
 
-#include "stdlib.h" // For malloc(...).
+#include "stdlib.h"
 
-#if (defined(_WIN32) || defined(_WIN64)) && !defined(__windows__)
-    #define __windows__ 1
-#endif
+#define __windows__ (defined(_WIN32) || defined(_WIN64))
 
 #if __linux__
     #include "linux/limits.h" // For PATH_MAX
@@ -34,40 +32,40 @@ Should any OS fail any tests they and their failed tests will be listed here:
     #include "libloaderapi.h" // For GetModuleFileNameA(...)
     #ifndef PATH_MAX
         #include "minwindef.h" // Contains MAX_PATH
+        #define PATH_MAX_NEW_DEFINE
         #define PATH_MAX MAX_PATH
     #endif // PATH_MAX
 #endif
 
 static char *get_program_path()
 {
+    char *path = malloc(PATH_MAX + 1);
+    const int path_len =
 #if __linux__
-    char *path = malloc(PATH_MAX);
-#if defined(__GNUC__)
-    #pragma GCC diagnostic ignored "-Wunused-result"
-#endif // __GNUC__
-    readlink("/proc/self/exe", path, PATH_MAX);
-#if defined(__GNUC__)
-    #pragma GCC diagnostic pop // "-Wunused-result"
-#endif // __GNUC__
-    return path;
+    readlink("/proc/self/exe", path, PATH_MAX) + 1;
 #elif __windows__
-    char *path = malloc(PATH_MAX);
-    const int path_len = GetModuleFileNameA(NULL, path, PATH_MAX) + 1;
-    path = realloc(path, path_len);
+    GetModuleFileNameA(0, path, PATH_MAX) + 1;
 
     // Replace '\' with '/' for conformity between OS's:
-    for (int i = 0; path[i]; ++i)
+    for (int i = 0; i < path_len; ++i)
     {
         if (path[i] == '\\')
         {
             path[i] = '/';
         }
     }
-
-    return path;
 #else
-    #error Unknown operating system, currently only supports Linux and Windows-32/64.
+    #error Unknown operating system, currently only support Linux and Windows-32/64. Submitting new OS implementations through GitHub PRs will always be welcome.
 #endif
+    path[path_len - 1] = 0;
+    return realloc(path, path_len);
 }
+
+// Remove new definitions:
+#undef __windows__
+#ifdef PATH_MAX_NEW_DEFINE
+    #undef PATH_MAX
+    #undef PATH_MAX_NEW_DEFINE
+#endif
 
 #endif // __GET_PROGRAM_PATH_H
