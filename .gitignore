@@ -6,13 +6,19 @@
 # Non-Coff exectables
 *.exe
 *.out
-*.o
 
 # VSCode related ignores
 .vscode/
 
 # Build folders
 **/build/
+
+# Compiled libraries
+*.o
+*.a
+*.so
+*.dll
+*.dll.a
 
 # Ignored files (e.g. myScript_IGN.sh). Put _IGN at any point in a file name to ignore it
 *_IGN*
