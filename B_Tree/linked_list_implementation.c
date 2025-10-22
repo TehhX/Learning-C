@@ -12,14 +12,20 @@ typedef struct node {
 
 void b_tree_create(b_tree *const restrict btree, const size_t max_vals, const size_t val_size, a_greater agreater)
 {
-    btree->max_vals = max_vals;
-    btree->val_size = val_size;
-    btree->agreater = agreater;
+    *btree = (b_tree)
+    {
+        .max_vals = max_vals,
+        .val_size = val_size,
+        .agreater = agreater,
+        .data = malloc(sizeof(node))
+    };
 
-    btree->data = malloc(sizeof(node));
-    ((node *) btree->data)->vals = malloc(val_size * max_vals);
-    ((node *) btree->data)->parent = NULL;
-    ((node *) btree->data)->children = calloc(max_vals, sizeof(node));
+    *(node *) btree->data = (node)
+    {
+        .vals = malloc(val_size * max_vals),
+        .parent = NULL,
+        .children = calloc(max_vals, sizeof(node))
+    };
 }
 
 void b_tree_destroy(b_tree *const restrict btree)
@@ -68,6 +74,8 @@ void b_tree_destroy(b_tree *const restrict btree)
 
             // 3.2
             free(to_free->vals);
+            free(to_free->children);
+            free(to_free);
             i = 0;
         }
         else
@@ -79,25 +87,27 @@ void b_tree_destroy(b_tree *const restrict btree)
 
 bool b_tree_insert(b_tree *const restrict btree, void *val)
 {
-
+    // TODO
 }
 
 void b_tree_remove(b_tree *const restrict btree, void *val)
 {
-
+    // TODO
 }
 
-bool b_tree_has(b_tree *const restrict btree, void *val)
+bool b_tree_has(const b_tree *const restrict btree, void *val)
 {
+    const node *traveller = btree->data;
 
+    // TODO
 }
 
-bool b_tree_write(b_tree const *const restrict btree, FILE *restrict stream)
+bool b_tree_write(const b_tree *const restrict btree, FILE *restrict stream)
 {
-
+    // TODO
 }
 
 bool b_tree_read(b_tree *const restrict btree, FILE *restrict stream)
 {
-
+    // TODO
 }
