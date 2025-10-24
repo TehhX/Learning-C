@@ -17,13 +17,13 @@ void b_tree_create(b_tree *const restrict btree, const size_t max_vals, const si
         .max_vals = max_vals,
         .val_size = val_size,
         .agreater = agreater,
-        .data = malloc(sizeof(node))
+        .data     = malloc(sizeof(node))
     };
 
     *(node *) btree->data = (node)
     {
-        .vals = malloc(val_size * max_vals),
-        .parent = NULL,
+        .vals     = malloc(val_size * max_vals),
+        .parent   = NULL,
         .children = calloc(max_vals, sizeof(node))
     };
 }
@@ -85,17 +85,17 @@ void b_tree_destroy(b_tree *const restrict btree)
     }
 }
 
-bool b_tree_insert(b_tree *const restrict btree, void *val)
+bool b_tree_insert(b_tree *const restrict btree, const void *const restrict val)
 {
     // TODO
 }
 
-void b_tree_remove(b_tree *const restrict btree, void *val)
+void b_tree_remove(b_tree *const restrict btree, const void *const restrict val)
 {
     // TODO
 }
 
-bool b_tree_has(const b_tree *const restrict btree, void *val)
+bool b_tree_has(const b_tree *const restrict btree, const void *const restrict val)
 {
     const node *traveller = btree->data;
 

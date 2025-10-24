@@ -20,5 +20,5 @@ int main()
 
     b_tree_destroy(&btree);
 
-    printf("End of %s::main():%d reached.\n", __FILE__, __LINE__);
+    printf("End of %s::main()::%d reached.\n", __FILE__, __LINE__);
 }

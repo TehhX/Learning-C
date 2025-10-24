@@ -22,13 +22,13 @@ void b_tree_create(b_tree *const restrict btree, const size_t max_vals, const si
 void b_tree_destroy(b_tree *const restrict btree);
 
 // Inserts *val into btree, returns true if it already exists.
-bool b_tree_insert(b_tree *const restrict btree, void *val);
+bool b_tree_insert(b_tree *const restrict btree, const void *const restrict val);
 
 // Removes *val from btree.
-void b_tree_remove(b_tree *const restrict btree, void *val);
+void b_tree_remove(b_tree *const restrict btree, const void *const restrict val);
 
 // Returns true if btree contains *val.
-bool b_tree_has(const b_tree *const restrict btree, void *val);
+bool b_tree_has(const b_tree *const restrict btree, const void *const restrict val);
 
 // Writes a btree to stream, returns false if failed.
 bool b_tree_write(const b_tree *const restrict btree, FILE *restrict stream); 
