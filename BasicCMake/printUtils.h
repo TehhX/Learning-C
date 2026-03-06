@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 // Print P, newline character
-void println(const char* P);
+void println(const char *P);
 
 // Print P vertically
-void printVert(const char* P);
+void printVert(const char *P);

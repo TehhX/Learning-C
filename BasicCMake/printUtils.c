@@ -1,10 +1,10 @@
 #include <printUtils.h>
 
-void println(const char* P) {
-    printf("%s%c", P, '\n');
+void println(const char *str) {
+    printf("%s\n", str);
 }
 
-void printVert(const char* P) {
-    for (size_t i = 0; P[i] != '\0'; i++)
-        printf("%c\n", P[i]);
+void printVert(const char *str) {
+    for (size_t i = 0; str[i] != '\0'; i++)
+        printf("%c\n", str[i]);
 }
