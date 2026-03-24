@@ -1,0 +1,12 @@
+// Example of adding run CLI arguments to a CMake program via VSCode
+{
+    "cmake.debugConfig":
+    {
+        "args":
+        [
+            "arguments",
+            "go",
+            "here"
+        ]
+    }
+}
