@@ -3,12 +3,13 @@
 !*.*
 !*/
 
-# Non-Coff exectables
+# Non-Coff executables
 *.exe
 *.out
 
-# VSCode related ignores
-.vscode/
+# VS related ignores
+/.vscode/
+/.vs/
 
 # Build folders
 **/build/
@@ -17,6 +18,7 @@
 *.o
 *.a
 *.so
+*.obj
 *.dll
 *.dll.a
 
