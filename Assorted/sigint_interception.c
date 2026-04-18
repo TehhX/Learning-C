@@ -15,7 +15,7 @@ static bool sigint_caught = false;
 #elif defined(_WIN32) || defined(_WIN64)
     #include "windows.h"
 
-    BOOL sigint_handler(DWORD _)
+    BOOL WINAPI sigint_handler(DWORD _)
     {
         sigint_caught = true;
 
