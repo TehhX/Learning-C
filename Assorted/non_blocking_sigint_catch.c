@@ -40,7 +40,7 @@ static bool caught = false;
     #define POLL_FUNC WSAPoll
     #define POLL_ERROR SOCKET_ERROR
 
-    BOOL sigint_handler(DWORD _)
+    BOOL WINAPI sigint_handler(DWORD _)
     {
         caught = true;
 
