@@ -1,4 +1,5 @@
 // Get user input without blocking until they type. Foundational info in /Assorted/sigint_interception.c
+// Linux only for the time being
 
 #include "stdio.h"
 #include "stdbool.h"
@@ -19,11 +20,6 @@ static bool caught = false;
     #include "signal.h"
     #include "errno.h"
 
-    #define FD_STDIN STDIN_FILENO
-    #define READABLE_FLAG POLLIN
-    #define POLL_FUNC poll
-    #define POLL_ERROR -1
-
     void sigint_handler(int _)
     {
         caught = true;
@@ -34,11 +30,6 @@ static bool caught = false;
     #define NBSC_INSERT_WIN(CONTENTS) CONTENTS
 
     #include "windows.h"
-
-    #define FD_STDIN 0
-    #define READABLE_FLAG POLLRDNORM
-    #define POLL_FUNC WSAPoll
-    #define POLL_ERROR SOCKET_ERROR
 
     BOOL WINAPI sigint_handler(DWORD _)
     {
@@ -66,11 +57,11 @@ int main()
     {
         struct pollfd poll_input =
         {
-            .fd = FD_STDIN,
-            .events = READABLE_FLAG
+            .fd = STDIN_FILENO,
+            .events = POLLIN
         };
 
-        if (POLL_FUNC(&poll_input, 1, 0) == POLL_ERROR)
+        if (poll(&poll_input, 1, 0) == -1)
         {
             // Interrupted by CTRL+C while polling, leave loop
             if (errno == EINTR)
@@ -85,7 +76,7 @@ int main()
             }
         }
 
-        if (poll_input.revents & READABLE_FLAG)
+        if (poll_input.revents & POLLIN)
         {
             char buf[256];
             fgets(buf, 256, stdin);
