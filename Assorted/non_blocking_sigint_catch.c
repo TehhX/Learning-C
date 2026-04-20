@@ -33,7 +33,7 @@ int main()
         {
             char buf[256];
             fgets(buf, 256, stdin);
-            printf("You entered \"%.*s\".\n", strlen(buf) - 1, buf);
+            printf("You entered \"%.*s\".\n", (int) (strlen(buf) - 1), buf);
         }
     }
 
