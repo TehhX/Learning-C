@@ -1,98 +1,175 @@
-// Get user input without blocking until they type. Foundational info in /Assorted/sigint_interception.c
-// Linux only for the time being
+// Get user input without blocking until they type. Foundational info in /Assorted/sigint_interception.c and /Assorted/multithreaded_user_input.c
 
 #include "stdio.h"
+#include "pthread.h"
 #include "stdbool.h"
 #include "string.h"
+#include "errno.h"
+#include "stdlib.h"
 
-#define NBSC_PLAT_LIN 0
-#define NBSC_PLAT_WIN 1
-
-static bool caught = false;
+static bool caught_sigint = false;
 
 #ifdef __linux__
-    #define NBSC_PLAT NBSC_PLAT_LIN
-    #define NBSC_INSERT_LIN(CONTENTS) CONTENTS
-    #define NBSC_INSERT_WIN(CONTENTS)
-
-    #include "unistd.h"
-    #include "poll.h"
     #include "signal.h"
-    #include "errno.h"
 
-    void sigint_handler(int _)
+    void sigint_handler(const int sig_code)
     {
-        caught = true;
+        caught_sigint = true;
     }
 #elif defined(_WIN32)
-    #define NBSC_PLAT NBSC_PLAT_WIN
-    #define NBSC_INSERT_LIN(CONTENTS)
-    #define NBSC_INSERT_WIN(CONTENTS) CONTENTS
-
     #include "windows.h"
 
-    BOOL WINAPI sigint_handler(DWORD _)
+    BOOL WINAPI sigint_handler(const DWORD sig_code)
     {
-        caught = true;
+        caught_sigint = true;
 
         return TRUE;
     }
-#else
-    #error "Unknown OS."
 #endif
+
+struct routine_user_input_params
+{
+    char input[1024];
+    pthread_mutex_t input_lock;
+};
+
+static void *routine_user_input(struct routine_user_input_params *const params)
+{
+    pthread_mutex_lock(&params->input_lock);
+    fgets(params->input, sizeof(params->input), stdin);
+    pthread_mutex_unlock(&params->input_lock);
+
+    return NULL;
+}
+
+// Exits program with value `retval` after cleaning thread and mutex. Pass NULL to `thread` and/or `mutex` for no cleanup on either respectively. Pass `true` to `sigint_status` to reset signal catching behavior of terminal
+static void cleanup(int retval, pthread_t *const thread, pthread_mutex_t *const mutex, const bool sigint_status)
+{
+    if (thread)
+    {
+        if ((errno = pthread_cancel(*thread)))
+        {
+            perror("Cleanup: Couldn't cancel user input thread");
+            retval = 1;
+        }
+    }
+
+    if (mutex)
+    {
+        if ((errno = pthread_mutex_unlock(mutex)))
+        {
+            perror("Cleanup: Couldn't unlock mutex");
+            retval = 1;
+        }
+
+        if ((errno = pthread_mutex_destroy(mutex)))
+        {
+            perror("Cleanup: Couldn't destroy mutex");
+            retval = 1;
+        }
+    }
+
+    if (sigint_status)
+    {
+        if (
+        #ifdef __linux__
+            signal(SIGINT, NULL) == SIG_ERR
+        #elif defined(_WIN32)
+            !SetConsoleCtrlHandler(NULL, FALSE)
+        #endif
+        ){
+            perror("Cleanup: Couldn't restore SIGINT handling");
+            retval = 1;
+        }
+    }
+
+    exit(retval);
+}
 
 int main()
 {
-    if
-    (
-        NBSC_INSERT_LIN(signal(SIGINT, sigint_handler) == SIG_ERR)
-        NBSC_INSERT_WIN(!SetConsoleCtrlHandler(sigint_handler, TRUE))
-    )
-    {
+    if (
+    #ifdef __linux__
+        signal(SIGINT, sigint_handler) == SIG_ERR
+    #elif defined(_WIN32)
+        !SetConsoleCtrlHandler(sigint_handler, TRUE)
+    #endif
+    ){
         perror("Couldn't modify SIGINT handling");
-        return 1;
+        cleanup(1, NULL, NULL, false);
     }
 
-    while (!caught)
+    struct routine_user_input_params params;
+    if (pthread_mutex_init(&params.input_lock, NULL))
     {
-        struct pollfd poll_input =
-        {
-            .fd = STDIN_FILENO,
-            .events = POLLIN
-        };
+        perror("Failed to initialize mutex");
+        cleanup(1, NULL, NULL, true);
+    }
 
-        if (poll(&poll_input, 1, 0) == -1)
+    int retval = -1;
+    pthread_t user_input_thread;
+    if (pthread_create(&user_input_thread, NULL, (void *(*)(void *)) routine_user_input, &params))
+    {
+        perror("Failed to spin up thread");
+        cleanup(1, NULL, &params.input_lock, true);
+    }
+
+    for (bool cont = true; cont; )
+    {
+        switch (pthread_mutex_trylock(&params.input_lock))
         {
-            // Interrupted by CTRL+C while polling, leave loop
-            if (errno == EINTR)
+            break; case EBUSY:
             {
-                break;
+                cont = false;
             }
-            // Unknown error, exit failure
-            else
+            break; case 0:
             {
-                perror("Poll failed with code other than EINTR");
-                return 1;
+                if (pthread_mutex_unlock(&params.input_lock))
+                {
+                    perror("Failed to unlock mutex from main");
+                    cleanup(1, &user_input_thread, &params.input_lock, true);
+                }
+            }
+            break; default:
+            {
+                perror("Misc mutex error");
+                cleanup(1, &user_input_thread, &params.input_lock, true);
             }
         }
+    }
 
-        if (poll_input.revents & POLLIN)
+    for (unsigned long long loop_count = 0; ; )
+    {
+        switch (pthread_mutex_trylock(&params.input_lock))
         {
-            char buf[256];
-            fgets(buf, 256, stdin);
-            printf("You entered \"%.*s\".\n", (int) (strlen(buf) - 1), buf);
+            // Already locked
+            break; case EBUSY:
+            {
+                if (++loop_count == 0)
+                {
+                    puts("Count overflowed, continuing from 0...");
+                }
+
+                if (caught_sigint)
+                {
+                    puts("\nSIGINT caught.");
+                    caught_sigint = false;
+                }
+            }
+            // Got the lock successfully
+            break; case 0:
+            {
+                printf("Got input after %llu loops: %s", loop_count, params.input);
+                cleanup(0, &user_input_thread, &params.input_lock, true);
+            }
+            // Miscellaneous error
+            break; default:
+            {
+                perror("Misc mutex error");
+                cleanup(1, &user_input_thread, &params.input_lock, true);
+            }
         }
     }
 
-    printf("\nCaught SIGINT, exiting.\n");
-
-    if
-    (
-        NBSC_INSERT_LIN(signal(SIGINT, NULL) == SIG_ERR)
-        NBSC_INSERT_WIN(!SetConsoleCtrlHandler(NULL, FALSE))
-    )
-    {
-        perror("Couldn't restore SIGINT handling");
-        return 1;
-    }
+    cleanup(1, &user_input_thread, &params.input_lock, true);
 }
