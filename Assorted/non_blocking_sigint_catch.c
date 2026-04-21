@@ -9,22 +9,32 @@
 
 static bool caught_sigint = false;
 
+#ifdef __GNUC__
+    #define ATTR_UNUSED_PARAM __attribute__((unused))
+#elif defined(_MSC_VER)
+    #define ATTR_UNUSED_PARAM
+#else
+    #error "Unknown compiler."
+#endif
+
 #ifdef __linux__
     #include "signal.h"
 
-    void sigint_handler(const int sig_code)
+    void sigint_handler(ATTR_UNUSED_PARAM const int sig_code)
     {
         caught_sigint = true;
     }
 #elif defined(_WIN32)
     #include "windows.h"
 
-    BOOL WINAPI sigint_handler(const DWORD sig_code)
+    BOOL WINAPI sigint_handler(ATTR_UNUSED_PARAM const DWORD sig_code)
     {
         caught_sigint = true;
 
         return TRUE;
     }
+#else
+    #error "Unknown OS."
 #endif
 
 struct routine_user_input_params
@@ -106,7 +116,6 @@ int main()
         cleanup(1, NULL, NULL, true);
     }
 
-    int retval = -1;
     pthread_t user_input_thread;
     if (pthread_create(&user_input_thread, NULL, (void *(*)(void *)) routine_user_input, &params))
     {
