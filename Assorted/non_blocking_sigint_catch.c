@@ -176,10 +176,12 @@ int main()
                 {
                     // Separate ^C output and SIGINT caught, only required on Linux
                     #ifdef __linux__
-                        fputc('\n', stdout);
+                        printf(" | ");
+                        fflush(stdout);
                     #endif
 
                     printf("SIGINT caught.\nEnter string: ");
+                    fflush(stdout);
                     caught_sigint = false;
                 }
             }
