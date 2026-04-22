@@ -1,5 +1,11 @@
 // Get user input without blocking until they type. Foundational info in /Assorted/sigint_interception.c and /Assorted/multithreaded_user_input.c
 
+#if !defined(__linux__) && !defined(_WIN32)
+    #error "Unknown OS."
+#elif !defined(__GNUC__) && !defined(_MSC_VER)
+    #error "Unknown compiler."
+#endif
+
 #include "stdio.h"
 #include "pthread.h"
 #include "stdbool.h"
@@ -13,8 +19,6 @@ static bool caught_sigint = false;
     #define ATTR_UNUSED_PARAM __attribute__((unused))
 #elif defined(_MSC_VER)
     #define ATTR_UNUSED_PARAM
-#else
-    #error "Unknown compiler."
 #endif
 
 #ifdef __linux__
@@ -33,20 +37,22 @@ static bool caught_sigint = false;
 
         return TRUE;
     }
-#else
-    #error "Unknown OS."
 #endif
 
 struct routine_user_input_params
 {
-    char input[1024];
+    char input[256];
     pthread_mutex_t input_lock;
 };
 
 static void *routine_user_input(struct routine_user_input_params *const params)
 {
     pthread_mutex_lock(&params->input_lock);
-    fgets(params->input, sizeof(params->input), stdin);
+    START:;
+    if (!fgets(params->input, sizeof(params->input), stdin))
+    {
+        goto START;
+    }
     pthread_mutex_unlock(&params->input_lock);
 
     return NULL;
@@ -57,7 +63,12 @@ static void cleanup(int retval, pthread_t *const thread, pthread_mutex_t *const 
 {
     if (thread)
     {
-        if ((errno = pthread_cancel(*thread)))
+        if ((errno = pthread_cancel(*thread))
+        // Windows complains without this
+        #ifdef _WIN32
+            && errno != ESRCH
+        #endif
+        )
         {
             perror("Cleanup: Couldn't cancel user input thread");
             retval = 1;
@@ -147,6 +158,8 @@ int main()
         }
     }
 
+    printf("Enter string: ");
+
     for (unsigned long long loop_count = 0; ; )
     {
         switch (pthread_mutex_trylock(&params.input_lock))
@@ -161,14 +174,25 @@ int main()
 
                 if (caught_sigint)
                 {
-                    puts("\nSIGINT caught.");
+                    // Separate ^C output and SIGINT caught, only required on Linux
+                    #ifdef __linux__
+                        fputc('\n', stdout);
+                    #endif
+
+                    printf("SIGINT caught.\nEnter string: ");
                     caught_sigint = false;
                 }
             }
             // Got the lock successfully
             break; case 0:
             {
-                printf("Got input after %llu loops: %s", loop_count, params.input);
+                printf("Got input after %llu loops: \"%.*s\"", loop_count, (int) strlen(params.input) - 1, params.input);
+
+                // Linux doesn't insert '\n' after exiting, windows does
+                #ifdef __linux__
+                    fputc('\n', stdout);
+                #endif
+
                 cleanup(0, &user_input_thread, &params.input_lock, true);
             }
             // Miscellaneous error
