@@ -1,6 +1,8 @@
 // Get user input without blocking until they type. Foundational info in /Assorted/sigint_interception.c and /Assorted/multithreaded_user_input.c
 
-#if !defined(__linux__) && !defined(_WIN32)
+#if defined(__MINGW32__) || defined(__MINGW64__)
+    #error "Ming-w64 outputs weirdly with this example, comment this out and run if you want though."
+#elif !defined(__linux__) && !defined(_WIN32)
     #error "Unknown OS."
 #elif !defined(__GNUC__) && !defined(_MSC_VER)
     #error "Unknown compiler."
