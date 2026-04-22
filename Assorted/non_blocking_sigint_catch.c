@@ -159,6 +159,7 @@ int main()
     }
 
     printf("Enter string: ");
+    fflush(stdout);
 
     for (unsigned long long loop_count = 0; ; )
     {
