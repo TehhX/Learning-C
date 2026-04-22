@@ -174,13 +174,7 @@ int main()
 
                 if (caught_sigint)
                 {
-                    // Separate ^C output and SIGINT caught, only required on Linux
-                    #ifdef __linux__
-                        printf(" | ");
-                        fflush(stdout);
-                    #endif
-
-                    printf("SIGINT caught.\nEnter string: ");
+                    printf(" | SIGINT caught.\nEnter string: ");
                     fflush(stdout);
                     caught_sigint = false;
                 }
