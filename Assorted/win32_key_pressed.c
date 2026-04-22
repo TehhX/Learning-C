@@ -3,6 +3,7 @@
 
 #include "windows.h"
 #include "stdio.h"
+#include "string.h"
 
 int main()
 {
@@ -20,14 +21,47 @@ int main()
     // Get HWND of console window via new title
     const HWND console_window_handle = FindWindowA(NULL, new_title);
 
+    // Set up input buffer
+    char *input = NULL;
+
+    printf("Enter value: ");
     for (unsigned long long count = 1; count; ++count)
     {
         // Check that console window is in foreground, and subsequently that enter (newline) key is pressed, if so print count
-        if (GetForegroundWindow() == console_window_handle && GetAsyncKeyState(VK_RETURN))
+        if (GetForegroundWindow() == console_window_handle && GetAsyncKeyState(VK_RETURN) & 1)
         {
-            printf("Pressed on %llu.\n", count);
+            size_t len = 0;
+
+            for (int cont = 1; cont; )
+            {
+                const int next = fgetc(stdin);
+                switch (next)
+                {
+                    break; case EOF:
+                    {
+                        fputs("Unexpected input, shutting down.", stderr);
+                        return 1;
+                    }
+                    break; case '\n':
+                    {
+                        input = realloc(input, sizeof(char) * (len + 1));
+                        input[len] = '\0';
+                        cont = 0;
+                    }
+                    break; default:
+                    {
+                        input = realloc(input, sizeof(char) * (len + 1));
+                        input[len] = (char) next;
+                        ++len;
+                    }
+                }
+            }
+
+            printf("Entered \"%s\" on loop #%llu\nEnter value: ", input, count);
         }
     }
+
+    free(input);
 
     puts("Overflowed count variable.");
 }
