@@ -182,13 +182,7 @@ int main()
             // Got the lock successfully
             break; case 0:
             {
-                printf("Got input after %llu loops: \"%.*s\"", loop_count, (int) strlen(params.input) - 1, params.input);
-
-                // Linux doesn't insert '\n' after exiting, windows does
-                #ifdef __linux__
-                    fputc('\n', stdout);
-                #endif
-
+                printf("Got input after %llu loops: \"%.*s\"\n", loop_count, (int) strlen(params.input) - 1, params.input);
                 cleanup(0, &user_input_thread, &params.input_lock, true);
             }
             // Miscellaneous error
