@@ -41,18 +41,41 @@ static bool caught_sigint = false;
 
 struct routine_user_input_params
 {
-    char input[256];
+    char *input;
+    size_t input_len;
     pthread_mutex_t input_lock;
 };
 
 static void *routine_user_input(struct routine_user_input_params *const params)
 {
     pthread_mutex_lock(&params->input_lock);
-    START:;
-    if (!fgets(params->input, sizeof(params->input), stdin))
+
+    params->input_len = 0;
+
+    for (bool cont = true; cont; )
     {
-        goto START;
+        const int next = fgetc(stdin);
+        switch (next)
+        {
+            break; case '\n':
+            {
+                params->input = realloc(params->input, sizeof(char) * (++params->input_len + 1));
+                params->input[params->input_len] = '\0';
+
+                cont = false;
+            }
+            break; case EOF:
+            {
+                params->input_len = 0;
+            }
+            break; default:
+            {
+                params->input = realloc(params->input, sizeof(char) * (params->input_len + 1));
+                params->input[params->input_len++] = (char) next;
+            }
+        }
     }
+
     pthread_mutex_unlock(&params->input_lock);
 
     return NULL;
@@ -120,7 +143,7 @@ int main()
         cleanup(1, NULL, NULL, false);
     }
 
-    struct routine_user_input_params params;
+    struct routine_user_input_params params = { 0 };
     if (pthread_mutex_init(&params.input_lock, NULL))
     {
         perror("Failed to initialize mutex");
