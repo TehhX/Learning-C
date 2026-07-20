@@ -29,6 +29,8 @@ void sorted_find_insert_int_linear(int **const array, size_t *const array_len, c
     if (*array_len == 0)
     {
         *(*array = malloc(sizeof(int))) = value;
+        on_insert(*array, value);
+        ++*array_len;
         return;
     }
 
@@ -52,10 +54,68 @@ void sorted_find_insert_int_linear(int **const array, size_t *const array_len, c
     on_insert((*array) + (*array_len) - 1, value);
 }
 
+// Searches using binary search
+void sorted_find_insert_int_binary(int **const array, size_t *const array_len, const int value, sorted_find_insert_int_action_t on_find, sorted_find_insert_int_action_t on_insert)
+{
+    if (*array_len == 0)
+    {
+        *(*array = malloc(sizeof(int))) = value;
+        on_insert(*array, value);
+        ++*array_len;
+        return;
+    }
+    else if (array[0][0] > value)
+    {
+        *array = realloc(*array, sizeof(int) * ++*array_len);
+        memmove(array[0] + 1, array[0], sizeof(int) * (*array_len - 1));
+        on_insert(*array, value);
+        return;
+    }
+    else if (*array_len == 1)
+    {
+        if (array[0][0] == value)
+        {
+            on_find(*array, value);
+            return;
+        }
+        else // Implicitly array[0][0] < value
+        {
+            *array = realloc(*array, sizeof(int) * ++*array_len);
+            on_insert((*array) + 1, value);
+            return;
+        }
+    }
+
+    size_t low = 0, high = *array_len - 1;
+    while (low < high)
+    {
+        const size_t mid = low + (high - low) / 2;
+        if (array[0][mid] == value)
+        {
+            on_find(array[0] + mid, value);
+            return;
+        }
+        else if (array[0][mid] < value)
+        {
+            low = mid + 1;
+        }
+        else // Implicitly array[0][mid] > value
+        {
+            high = mid - 1;
+        }
+    }
+
+    // Didn't find value
+    *array = realloc(*array, sizeof(int) * ++*array_len);
+    memmove((*array) + low, (*array) + high, sizeof(int) * (*array_len - low));
+    on_insert((*array) + low, value);
+}
+
 void list_on_find(int *const list_element, const int value)
 {
     *list_element = value;
-    printf("Found %d\n", *list_element);
+    printf("Found %d, changing to 12345\n", value);
+    *list_element = 12345;
 }
 
 void list_on_insert(int *const list_element, const int value)
@@ -94,5 +154,6 @@ static inline void test_method(const char *const identifier, sorted_find_insert_
 
 int main()
 {
-    test_method("Linear", sorted_find_insert_int_linear, 100000, -1);
+    test_method("Linear", sorted_find_insert_int_linear, 0, 32);
+    test_method("Binary", sorted_find_insert_int_binary, 5, 16);
 }
