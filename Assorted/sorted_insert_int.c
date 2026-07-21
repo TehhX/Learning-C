@@ -1,4 +1,4 @@
-// Linux only example
+// Linux and GCC only example
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -71,6 +71,22 @@ void sorted_find_insert_int_binary(int **const array, size_t *const array_len, c
         on_insert(*array, value);
         return;
     }
+    else if (array[0][0] == value)
+    {
+        on_find(*array, value);
+        return;
+    }
+    else if (array[0][*array_len - 1] < value)
+    {
+        *array = realloc(*array, sizeof(int) * ++*array_len);
+        on_insert(*array + *array_len - 1, value);
+        return;
+    }
+    else if (array[0][*array_len - 1] == value)
+    {
+        on_find(*array + *array_len - 1, value);
+        return;
+    }
     else if (*array_len == 1)
     {
         if (array[0][0] == value)
@@ -111,20 +127,20 @@ void sorted_find_insert_int_binary(int **const array, size_t *const array_len, c
     on_insert((*array) + low, value);
 }
 
-void list_on_find(int *const list_element, const int value)
+const int *element;
+
+void list_on_find(int *const list_element, __attribute__((unused)) const int value)
 {
-    *list_element = value;
-    printf("Found %d, changing to 12345\n", value);
-    *list_element = 12345;
+    element = list_element;
 }
 
 void list_on_insert(int *const list_element, const int value)
 {
     *list_element = value;
-    printf("Inserted %d\n", *list_element);
+    element = list_element;
 }
 
-static inline void test_method(const char *const identifier, sorted_find_insert_int method, size_t list_len, const int value)
+static inline void test_method(const char *const identifier, sorted_find_insert_int method, size_t list_len, const int value, const int *const expected_result, const size_t expected_result_len, const size_t expected_index)
 {
     int *list = malloc(sizeof(int) * list_len);
     for (size_t i = 0; i < list_len; ++i)
@@ -137,23 +153,56 @@ static inline void test_method(const char *const identifier, sorted_find_insert_
 
     method(&list, &list_len, value, list_on_find, list_on_insert);
 
+    const int correct_index = (expected_index == (size_t) (element - list));
+
     struct timeval end_tval;
     gettimeofday(&end_tval, NULL);
 
     const double total = (end_tval.tv_usec / 1000000.0 + end_tval.tv_sec) - (start_tval.tv_usec / 1000000.0 + start_tval.tv_sec);
 
-    for (size_t i = 0; i < list_len; ++i)
+    int correct_contents = 1;
+    if (list_len == expected_result_len)
     {
-        printf("list[%zu]=%d\n", i, list[i]);
+        for (size_t i = 0; i < list_len; ++i)
+        {
+            if (list[i] != expected_result[i])
+            {
+                correct_contents = 0;
+                break;
+            }
+        }
+    }
+    else
+    {
+        correct_contents = 0;
     }
 
     free(list);
 
-    printf("Time taken for \"%s\": %lf\n", identifier, total);
+    printf("%20s | %8lfs | %15s | %12s\n", identifier, total, (correct_contents ? "Correct" : "  False"), (correct_index ? "Correct" : "  False"));
+}
+
+void test_cases(const char *const method_identifier, sorted_find_insert_int method)
+{
+    printf(
+        "%s:\n"
+        "          Identifier |      Time | Contents Status | Index Status\n"
+        "---------------------+-----------+-----------------+-------------\n"
+        ,
+        method_identifier
+    );
+
+    test_method(   "Find Start", method, 4,   0, (int[]){ 0, 4, 8, 12 },      4, 0);
+    test_method(  "Find Middle", method, 4,   8, (int[]){ 0, 4, 8, 12 },      4, 2);
+    test_method(     "Find End", method, 4,  12, (int[]){ 0, 4, 8, 12 },      4, 3);
+    test_method(   "Insert Pre", method, 4, -10, (int[]){ -10, 0, 4, 8, 12 }, 5, 0);
+    test_method("Insert Middle", method, 4,   5, (int[]){ 0, 4, 5, 8, 12 },   5, 2);
+    test_method(  "Insert Post", method, 4,  13, (int[]){ 0, 4, 8, 12, 13 },  5, 4);
+    test_method(        "Empty", method, 0,  32, (int[]){ 32 },               1, 0);
 }
 
 int main()
 {
-    test_method("Linear", sorted_find_insert_int_linear, 0, 32);
-    test_method("Binary", sorted_find_insert_int_binary, 5, 16);
+    test_cases("Linear", sorted_find_insert_int_linear);
+    test_cases("Binary", sorted_find_insert_int_binary);
 }
