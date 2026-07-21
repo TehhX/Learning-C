@@ -141,14 +141,12 @@ const int *element;
 void list_on_find(int *const list_element, __attribute__((unused)) const int value)
 {
     element = list_element;
-    printf("Find: %d\n", *list_element);
 }
 
 void list_on_insert(int *const list_element, const int value)
 {
     *list_element = value;
     element = list_element;
-    printf("Insert: %d\n", *list_element);
 }
 
 static inline void test_method(const char *const identifier, sorted_find_insert_int method, size_t list_len, const int value, const int *const expected_result, const size_t expected_result_len, const size_t expected_index)
@@ -194,9 +192,9 @@ static inline void test_method(const char *const identifier, sorted_find_insert_
 void test_cases(const char *const method_identifier, sorted_find_insert_int method)
 {
     printf(
-        "%s:\n"
-        "                 Identifier |       Time | Contents Status | Index Status\n"
-        "----------------------------+------------+-----------------+-------------\n"
+        "\n%s:\n"
+        "                  Identifier |       Time | Contents Status | Index Status\n"
+        "-----------------------------+------------+-----------------+-------------\n"
         ,
         method_identifier
     );
