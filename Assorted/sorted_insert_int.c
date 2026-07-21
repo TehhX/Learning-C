@@ -4,6 +4,8 @@
 #include <string.h>
 #include <sys/time.h>
 
+#define BIG_ARRAY_LEN 262144
+
 /*
     @brief A function to peform some action on a requested array element
 
@@ -121,84 +123,17 @@ void sorted_find_insert_int_binary(int **const array, size_t *const array_len, c
         }
     }
 
-    // Didn't find value
-    *array = realloc(*array, sizeof(int) * ++*array_len);
-    memmove((*array) + low, (*array) + high, sizeof(int) * (*array_len - low));
-    on_insert((*array) + low, value);
-}
-
-// Searches using binary search
-void sorted_find_insert_int_binary_v2(int **const array, size_t *const array_len, const int value, sorted_find_insert_int_action_t on_find, sorted_find_insert_int_action_t on_insert)
-{
-    // TODO: Simplify edge cases
-    if (*array_len == 0)
+    if (array[0][low] == value)
     {
-        *(*array = malloc(sizeof(int))) = value;
-        on_insert(*array, value);
-        ++*array_len;
+        on_find(*array + low, value);
         return;
     }
-    else if (array[0][0] > value)
+    else
     {
         *array = realloc(*array, sizeof(int) * ++*array_len);
-        memmove(array[0] + 1, array[0], sizeof(int) * (*array_len - 1));
-        on_insert(*array, value);
-        return;
+        memmove((*array) + low + 1, (*array) + low, sizeof(int) * (*array_len - low - 1));
+        on_insert((*array) + low, value);
     }
-    else if (array[0][0] == value)
-    {
-        on_find(*array, value);
-        return;
-    }
-    else if (array[0][*array_len - 1] < value)
-    {
-        *array = realloc(*array, sizeof(int) * ++*array_len);
-        on_insert(*array + *array_len - 1, value);
-        return;
-    }
-    else if (array[0][*array_len - 1] == value)
-    {
-        on_find(*array + *array_len - 1, value);
-        return;
-    }
-    else if (*array_len == 1)
-    {
-        if (array[0][0] == value)
-        {
-            on_find(*array, value);
-            return;
-        }
-        else // Implicitly array[0][0] < value
-        {
-            *array = realloc(*array, sizeof(int) * ++*array_len);
-            on_insert((*array) + 1, value);
-            return;
-        }
-    }
-
-    size_t low = 0, high = *array_len - 1;
-    while (low < high)
-    {
-        const size_t mid = low + (high - low) / 2;
-        if (array[0][mid] == value)
-        {
-            on_find(array[0] + mid, value);
-            return;
-        }
-        else if (array[0][mid] < value)
-        {
-            low = mid + 1;
-        }
-        else // Implicitly array[0][mid] > value
-        {
-            high = mid - 1;
-        }
-    }
-
-    // Didn't find value
-    *array = realloc(*array, sizeof(int) * ++*array_len);
-    memmove((*array) + low, (*array) + high, sizeof(int) * (*array_len - low));
-    on_insert((*array) + low, value);
 }
 
 const int *element;
@@ -206,12 +141,14 @@ const int *element;
 void list_on_find(int *const list_element, __attribute__((unused)) const int value)
 {
     element = list_element;
+    printf("Find: %d\n", *list_element);
 }
 
 void list_on_insert(int *const list_element, const int value)
 {
     *list_element = value;
     element = list_element;
+    printf("Insert: %d\n", *list_element);
 }
 
 static inline void test_method(const char *const identifier, sorted_find_insert_int method, size_t list_len, const int value, const int *const expected_result, const size_t expected_result_len, const size_t expected_index)
@@ -251,15 +188,15 @@ static inline void test_method(const char *const identifier, sorted_find_insert_
 
     free(list);
 
-    printf("%20s | %8lfs | %15s | %12s\n", identifier, (end_tval.tv_usec / 1000000.0 + end_tval.tv_sec) - (start_tval.tv_usec / 1000000.0 + start_tval.tv_sec), (correct_contents ? "Correct" : "  False"), (correct_index ? "Correct" : "  False"));
+    printf("%28s | %9.6lfs | %15s | %12s\n", identifier, (end_tval.tv_usec / 1000000.0 + end_tval.tv_sec) - (start_tval.tv_usec / 1000000.0 + start_tval.tv_sec), (correct_contents ? "Correct" : "  False"), (correct_index ? "Correct" : "  False"));
 }
 
 void test_cases(const char *const method_identifier, sorted_find_insert_int method)
 {
     printf(
         "%s:\n"
-        "          Identifier |      Time | Contents Status | Index Status\n"
-        "---------------------+-----------+-----------------+-------------\n"
+        "                 Identifier |       Time | Contents Status | Index Status\n"
+        "----------------------------+------------+-----------------+-------------\n"
         ,
         method_identifier
     );
@@ -272,11 +209,30 @@ void test_cases(const char *const method_identifier, sorted_find_insert_int meth
     test_method("Insert Middle Even", method, 4,   6, (int[]){ 0, 4, 6, 8, 12 },   5, 2);
     test_method(       "Insert Post", method, 4,  13, (int[]){ 0, 4, 8, 12, 13 },  5, 4);
     test_method(             "Empty", method, 0,  32, (int[]){ 32 },               1, 0);
+
+    int big_array[BIG_ARRAY_LEN + 1] = { 0 };
+    for (size_t i = 0; i < 48000; ++i)
+    {
+        big_array[i] = i * 4;
+    }
+    big_array[48000] = 191997;
+    for (size_t i = 48001; i <= BIG_ARRAY_LEN; ++i)
+    {
+        big_array[i] = (i - 1) * 4;
+    }
+    test_method( "Big Array Insert Middle Odd", method, BIG_ARRAY_LEN, 191997, big_array, BIG_ARRAY_LEN + 1, 48000);
+    big_array[48000] = 191998;
+    test_method("Big Array Insert Middle Even", method, BIG_ARRAY_LEN, 191998, big_array, BIG_ARRAY_LEN + 1, 48000);
+    big_array[48000] = 192000;
+    for (size_t i = 48001; i <= BIG_ARRAY_LEN; ++i)
+    {
+        big_array[i] = i * 4;
+    }
+    test_method("Big Array Find Middle", method, BIG_ARRAY_LEN, 192000, big_array, BIG_ARRAY_LEN, 48000);
 }
 
 int main()
 {
     test_cases(   "Linear", sorted_find_insert_int_linear);
     test_cases(   "Binary", sorted_find_insert_int_binary);
-    test_cases("Binary V2", sorted_find_insert_int_binary_v2);
 }
