@@ -41,7 +41,7 @@ void sorted_find_insert_int_linear(int **const array, size_t *const array_len, c
         if (array[0][i] > value)
         {
             *array = realloc(*array, sizeof(int) * ++*array_len);
-            memmove((*array) + i + 1, (*array) + i, sizeof(int) * (*array_len - i));
+            memmove((*array) + i + 1, (*array) + i, sizeof(int) * (*array_len - i - 1));
             on_insert((*array) + i, value);
             return;
         }
@@ -73,35 +73,11 @@ void sorted_find_insert_int_binary(int **const array, size_t *const array_len, c
         on_insert(*array, value);
         return;
     }
-    else if (array[0][0] == value)
-    {
-        on_find(*array, value);
-        return;
-    }
     else if (array[0][*array_len - 1] < value)
     {
         *array = realloc(*array, sizeof(int) * ++*array_len);
         on_insert(*array + *array_len - 1, value);
         return;
-    }
-    else if (array[0][*array_len - 1] == value)
-    {
-        on_find(*array + *array_len - 1, value);
-        return;
-    }
-    else if (*array_len == 1)
-    {
-        if (array[0][0] == value)
-        {
-            on_find(*array, value);
-            return;
-        }
-        else // Implicitly array[0][0] < value
-        {
-            *array = realloc(*array, sizeof(int) * ++*array_len);
-            on_insert((*array) + 1, value);
-            return;
-        }
     }
 
     size_t low = 0, high = *array_len - 1;
@@ -136,22 +112,26 @@ void sorted_find_insert_int_binary(int **const array, size_t *const array_len, c
     }
 }
 
-const int *element;
+static const int *result_element;
 
 void list_on_find(int *const list_element, __attribute__((unused)) const int value)
 {
-    element = list_element;
+    result_element = list_element;
 }
 
 void list_on_insert(int *const list_element, const int value)
 {
     *list_element = value;
-    element = list_element;
+    result_element = list_element;
 }
 
 static inline void test_method(const char *const identifier, sorted_find_insert_int method, size_t list_len, const int value, const int *const expected_result, const size_t expected_result_len, const size_t expected_index)
 {
-    int *list = malloc(sizeof(int) * list_len);
+    int *list;
+    if (list_len)
+    {
+        list = malloc(sizeof(int) * list_len);
+    }
     for (size_t i = 0; i < list_len; ++i)
     {
         list[i] = i * 4;
@@ -165,7 +145,7 @@ static inline void test_method(const char *const identifier, sorted_find_insert_
     struct timeval end_tval;
     gettimeofday(&end_tval, NULL);
 
-    const int correct_index = (expected_index == (size_t) (element - list));
+    const int correct_index = (expected_index == (size_t) (result_element - list));
 
     int correct_contents = 1;
     if (list_len == expected_result_len)
@@ -231,6 +211,6 @@ void test_cases(const char *const method_identifier, sorted_find_insert_int meth
 
 int main()
 {
-    test_cases(   "Linear", sorted_find_insert_int_linear);
-    test_cases(   "Binary", sorted_find_insert_int_binary);
+    test_cases(    "Linear", sorted_find_insert_int_linear);
+    test_cases(    "Binary", sorted_find_insert_int_binary);
 }
