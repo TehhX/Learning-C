@@ -26,7 +26,7 @@ typedef void (*const sorted_find_insert_int_action_t)(int *const array_element, 
 typedef void (*const sorted_find_insert_int)(int **const array, size_t *const array_len, const int value, sorted_find_insert_int_action_t on_find, sorted_find_insert_int_action_t on_insert);
 
 // Searches linearly from the beginning
-void sorted_find_insert_int_linear(int **const array, size_t *const array_len, const int value, sorted_find_insert_int_action_t on_find, sorted_find_insert_int_action_t on_insert)
+static void sorted_find_insert_int_linear(int **const array, size_t *const array_len, const int value, sorted_find_insert_int_action_t on_find, sorted_find_insert_int_action_t on_insert)
 {
     if (*array_len == 0)
     {
@@ -38,26 +38,26 @@ void sorted_find_insert_int_linear(int **const array, size_t *const array_len, c
 
     for (size_t i = 0; i < *array_len; ++i)
     {
-        if (array[0][i] > value)
+        if ((*array)[i] > value)
         {
             *array = realloc(*array, sizeof(int) * ++*array_len);
-            memmove((*array) + i + 1, (*array) + i, sizeof(int) * (*array_len - i - 1));
-            on_insert((*array) + i, value);
+            memmove(*array + i + 1, *array + i, sizeof(int) * (*array_len - i - 1));
+            on_insert(*array + i, value);
             return;
         }
-        else if (array[0][i] == value)
+        else if ((*array)[i] == value)
         {
-            on_find((*array) + i, value);
+            on_find(*array + i, value);
             return;
         }
     }
 
     *array = realloc(*array, sizeof(int) * ++*array_len);
-    on_insert((*array) + (*array_len) - 1, value);
+    on_insert(*array + *array_len - 1, value);
 }
 
 // Searches using binary search
-void sorted_find_insert_int_binary(int **const array, size_t *const array_len, const int value, sorted_find_insert_int_action_t on_find, sorted_find_insert_int_action_t on_insert)
+static void sorted_find_insert_int_binary(int **const array, size_t *const array_len, const int value, sorted_find_insert_int_action_t on_find, sorted_find_insert_int_action_t on_insert)
 {
     if (*array_len == 0)
     {
@@ -66,14 +66,14 @@ void sorted_find_insert_int_binary(int **const array, size_t *const array_len, c
         ++*array_len;
         return;
     }
-    else if (array[0][0] > value)
+    else if ((*array)[0] > value)
     {
         *array = realloc(*array, sizeof(int) * ++*array_len);
-        memmove(array[0] + 1, array[0], sizeof(int) * (*array_len - 1));
+        memmove(*array + 1, *array, sizeof(int) * (*array_len - 1));
         on_insert(*array, value);
         return;
     }
-    else if (array[0][*array_len - 1] < value)
+    else if ((*array)[*array_len - 1] < value)
     {
         *array = realloc(*array, sizeof(int) * ++*array_len);
         on_insert(*array + *array_len - 1, value);
@@ -84,22 +84,22 @@ void sorted_find_insert_int_binary(int **const array, size_t *const array_len, c
     while (low < high)
     {
         const size_t mid = low + (high - low) / 2;
-        if (array[0][mid] == value)
+        if ((*array)[mid] == value)
         {
-            on_find(array[0] + mid, value);
+            on_find(*array + mid, value);
             return;
         }
-        else if (array[0][mid] < value)
+        else if ((*array)[mid] < value)
         {
             low = mid + 1;
         }
-        else // Implicitly array[0][mid] > value
+        else // Implicitly (*array)[mid] > value
         {
             high = mid - 1;
         }
     }
 
-    if (array[0][low] == value)
+    if ((*array)[low] == value)
     {
         on_find(*array + low, value);
         return;
@@ -107,19 +107,51 @@ void sorted_find_insert_int_binary(int **const array, size_t *const array_len, c
     else
     {
         *array = realloc(*array, sizeof(int) * ++*array_len);
-        memmove((*array) + low + 1, (*array) + low, sizeof(int) * (*array_len - low - 1));
-        on_insert((*array) + low, value);
+        memmove(*array + low + 1, *array + low, sizeof(int) * (*array_len - low - 1));
+        on_insert(*array + low, value);
+    }
+}
+
+static int compare_ints(const void *const a, const void *const b)
+{
+    return *(int *) a - *(int *) b;
+}
+
+// A very slow version using standard library functions
+static void sorted_find_insert_int_bsearchqsort(int **const array, size_t *const array_len, const int value, sorted_find_insert_int_action_t on_find, sorted_find_insert_int_action_t on_insert)
+{
+    if (*array_len == 0)
+    {
+        *(*array = malloc(sizeof(int))) = value;
+        on_insert(*array, value);
+        ++*array_len;
+        return;
+    }
+
+    int *result = bsearch(&value, *array, *array_len, sizeof(int), compare_ints);
+    if (result)
+    {
+        on_find(result, value);
+        return;
+    }
+    else
+    {
+        *array = realloc(*array, sizeof(int) * ++*array_len);
+        (*array)[*array_len - 1] = value;
+        qsort(*array, *array_len, sizeof(int), compare_ints);
+        on_insert(bsearch(&value, *array, *array_len, sizeof(int), compare_ints), value);
+        return;
     }
 }
 
 static const int *result_element;
 
-void list_on_find(int *const list_element, __attribute__((unused)) const int value)
+static void list_on_find(int *const list_element, __attribute__((unused)) const int value)
 {
     result_element = list_element;
 }
 
-void list_on_insert(int *const list_element, const int value)
+static void list_on_insert(int *const list_element, const int value)
 {
     *list_element = value;
     result_element = list_element;
@@ -169,7 +201,7 @@ static inline void test_method(const char *const identifier, sorted_find_insert_
     printf("%28s | %9.6lfs | %15s | %12s\n", identifier, (end_tval.tv_usec / 1000000.0 + end_tval.tv_sec) - (start_tval.tv_usec / 1000000.0 + start_tval.tv_sec), (correct_contents ? "Correct" : "  False"), (correct_index ? "Correct" : "  False"));
 }
 
-void test_cases(const char *const method_identifier, sorted_find_insert_int method)
+static void test_cases(const char *const method_identifier, sorted_find_insert_int method)
 {
     printf(
         "\n%s:\n"
@@ -211,6 +243,7 @@ void test_cases(const char *const method_identifier, sorted_find_insert_int meth
 
 int main()
 {
-    test_cases(    "Linear", sorted_find_insert_int_linear);
-    test_cases(    "Binary", sorted_find_insert_int_binary);
+    test_cases(       "Linear", sorted_find_insert_int_linear);
+    test_cases(       "Binary", sorted_find_insert_int_binary);
+    test_cases("Bsearch Qsort", sorted_find_insert_int_bsearchqsort);
 }
