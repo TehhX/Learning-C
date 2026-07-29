@@ -121,12 +121,15 @@ static void sorted_find_insert_binary(void **const array, size_t *const array_le
         on_find(*array + element_size * low, element_size, value);
         return;
     }
-    else
+
+    if (compare(value, *array + element_size * low) > 0)
     {
-        *array = realloc(*array, element_size * ++*array_len);
-        memmove(*array + element_size * (low + 1), *array + element_size * low, element_size * (*array_len - low - 1));
-        on_insert(*array + element_size * low, element_size, value);
+        ++low;
     }
+
+    *array = realloc(*array, element_size * ++*array_len);
+    memmove(*array + element_size * (low + 1), *array + element_size * low, element_size * (*array_len - low - 1));
+    on_insert(*array + element_size * low, element_size, value);
 }
 
 static const int *result_element_int;
