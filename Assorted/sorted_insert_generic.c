@@ -22,14 +22,15 @@ static void sorted_find_insert_linear(void **const array, size_t *const array_le
 
     for (size_t i = 0; i < *array_len; ++i)
     {
-        if (compare(*array + element_size * i, value) > 0)
+        const int compare_result = compare(*array + element_size * i, value);
+        if (compare_result > 0)
         {
             *array = realloc(*array, sizeof(element_size) * ++*array_len);
             memmove(*array + element_size * (i + 1), *array + element_size * i, sizeof(element_size) * (*array_len - i - 1));
             on_insert(*array + element_size * i, element_size, value);
             return;
         }
-        else if (compare(*array + element_size * i, value) == 0)
+        else if (compare_result == 0)
         {
             on_find(*array + element_size * i, element_size, value);
             return;
@@ -67,16 +68,18 @@ static void sorted_find_insert_binary(void **const array, size_t *const array_le
     while (low < high)
     {
         const size_t mid = low + (high - low) / 2;
-        if (compare(*array + element_size * mid, value) == 0)
+        const int compare_result = compare(*array + element_size * mid, value);
+
+        if (compare_result == 0)
         {
             on_find(*array + element_size * mid, element_size, value);
             return;
         }
-        else if (compare(*array + element_size * mid, value) < 0)
+        else if (compare_result < 0)
         {
             low = mid + 1;
         }
-        else // Implicitly compare(*array + element_size * mid, value) > 0
+        else // Implicitly compare_result > 0
         {
             high = mid - 1;
         }
@@ -139,16 +142,18 @@ static void list_on_insert(void *const list_element, const size_t element_size, 
     result_element_int = list_element;
 }
 
-static inline void test_method_int(const char *const identifier, sorted_find_insert method, size_t list_len, const int value, const int *const expected_result, const size_t expected_result_len, const size_t expected_index)
+static inline void test_method_int(const char *const identifier, sorted_find_insert method, int *list, size_t list_len, const int value, const int *const expected_result, const size_t expected_result_len, const size_t expected_index)
 {
-    int *list;
-    if (list_len)
+    if (list == NULL)
     {
-        list = malloc(sizeof(int) * list_len);
-    }
-    for (size_t i = 0; i < list_len; ++i)
-    {
-        list[i] = i * 4;
+        if (list_len)
+        {
+            list = malloc(sizeof(int) * list_len);
+        }
+        for (size_t i = 0; i < list_len; ++i)
+        {
+            list[i] = i * 4;
+        }
     }
 
     struct timeval start_tval;
@@ -193,14 +198,14 @@ static void test_cases_int(const char *const method_identifier, sorted_find_inse
         method_identifier
     );
 
-    test_method_int(        "Find Start", method, 4,   0, (int[]){ 0, 4, 8, 12 },      4, 0);
-    test_method_int(       "Find Middle", method, 4,   8, (int[]){ 0, 4, 8, 12 },      4, 2);
-    test_method_int(          "Find End", method, 4,  12, (int[]){ 0, 4, 8, 12 },      4, 3);
-    test_method_int(        "Insert Pre", method, 4, -10, (int[]){ -10, 0, 4, 8, 12 }, 5, 0);
-    test_method_int( "Insert Middle Odd", method, 4,   5, (int[]){ 0, 4, 5, 8, 12 },   5, 2);
-    test_method_int("Insert Middle Even", method, 4,   6, (int[]){ 0, 4, 6, 8, 12 },   5, 2);
-    test_method_int(       "Insert Post", method, 4,  13, (int[]){ 0, 4, 8, 12, 13 },  5, 4);
-    test_method_int(             "Empty", method, 0,  32, (int[]){ 32 },               1, 0);
+    test_method_int(        "Find Start", method, NULL, 4,   0, (int[]){ 0, 4, 8, 12 },      4, 0);
+    test_method_int(       "Find Middle", method, NULL, 4,   8, (int[]){ 0, 4, 8, 12 },      4, 2);
+    test_method_int(          "Find End", method, NULL, 4,  12, (int[]){ 0, 4, 8, 12 },      4, 3);
+    test_method_int(        "Insert Pre", method, NULL, 4, -10, (int[]){ -10, 0, 4, 8, 12 }, 5, 0);
+    test_method_int( "Insert Middle Odd", method, NULL, 4,   5, (int[]){ 0, 4, 5, 8, 12 },   5, 2);
+    test_method_int("Insert Middle Even", method, NULL, 4,   6, (int[]){ 0, 4, 6, 8, 12 },   5, 2);
+    test_method_int(       "Insert Post", method, NULL, 4,  13, (int[]){ 0, 4, 8, 12, 13 },  5, 4);
+    test_method_int(             "Empty", method, NULL, 0,  32, (int[]){ 32 },               1, 0);
 
     int big_array[BIG_ARRAY_LEN + 1] = { 0 };
     for (size_t i = 0; i < 212122; ++i)
@@ -212,20 +217,24 @@ static void test_cases_int(const char *const method_identifier, sorted_find_inse
     {
         big_array[i] = (i - 1) * 4;
     }
-    test_method_int("Big Array Insert Middle Odd", method, BIG_ARRAY_LEN, 848487, big_array, BIG_ARRAY_LEN + 1, 212122);
+    test_method_int("Big Array Insert Middle Odd", method, NULL, BIG_ARRAY_LEN, 848487, big_array, BIG_ARRAY_LEN + 1, 212122);
     big_array[212122] = 848486;
-    test_method_int("Big Array Insert Middle Even", method, BIG_ARRAY_LEN, 848486, big_array, BIG_ARRAY_LEN + 1, 212122);
+    test_method_int("Big Array Insert Middle Even", method, NULL, BIG_ARRAY_LEN, 848486, big_array, BIG_ARRAY_LEN + 1, 212122);
     big_array[212122] = 192000;
     for (size_t i = 48001; i <= BIG_ARRAY_LEN; ++i)
     {
         big_array[i] = i * 4;
     }
-    test_method_int("Big Array Find Middle", method, BIG_ARRAY_LEN, 192000, big_array, BIG_ARRAY_LEN, 48000);
+    test_method_int("Big Array Find Middle", method, NULL, BIG_ARRAY_LEN, 192000, big_array, BIG_ARRAY_LEN, 48000);
+
+    int *tf2pw_fail_arr = malloc(sizeof(int) * 8);
+    memcpy(tf2pw_fail_arr, (int[]){ 20497870, 55324893, 84904013, 146185685, 243868459, 297839534, 348744899, 427802341 }, sizeof(int) * 8);
+    test_method_int("TF2PW Failure", method, tf2pw_fail_arr, 8, 90231819, (int[]){ 20497870, 55324893, 84904013, 90231819, 146185685, 243868459, 297839534, 348744899, 427802341 }, 9, 3);
 }
 
 int main()
 {
     test_cases_int(       "Linear", sorted_find_insert_linear);
-    test_cases_int(       "Binary", sorted_find_insert_binary);
     test_cases_int("Bsearch Qsort", sorted_find_insert_bsearchqsort);
+    test_cases_int(       "Binary", sorted_find_insert_binary);
 }
