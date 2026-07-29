@@ -41,6 +41,37 @@ static void sorted_find_insert_linear(void **const array, size_t *const array_le
     on_insert(*array + element_size * (*array_len - 1), element_size, value);
 }
 
+static int compare_ints(const void *const a, const void *const b)
+{
+    return *(int *) a - *(int *) b;
+}
+
+static void sorted_find_insert_bsearchqsort(void **const array, size_t *const array_len, const size_t element_size, const void *const value, sorted_find_insert_action_t on_find, sorted_find_insert_action_t on_insert, const __compar_fn_t compare)
+{
+    if (*array_len == 0)
+    {
+        memcpy(*array = malloc(element_size), value, element_size);
+        on_insert(*array, element_size, value);
+        ++*array_len;
+        return;
+    }
+
+    int *const result = bsearch(value, *array, *array_len, element_size, compare);
+    if (result)
+    {
+        on_find(result, element_size, value);
+        return;
+    }
+    else
+    {
+        *array = realloc(*array, element_size * ++*array_len);
+        memcpy(*array + element_size * (*array_len - 1), value, element_size);
+        qsort(*array, *array_len, element_size, compare);
+        on_insert(bsearch(value, *array, *array_len, element_size, compare), element_size, value);
+        return;
+    }
+}
+
 static void sorted_find_insert_binary(void **const array, size_t *const array_len, const size_t element_size, const void *const value, sorted_find_insert_action_t on_find, sorted_find_insert_action_t on_insert, const __compar_fn_t compare)
 {
     if (*array_len == 0)
@@ -98,37 +129,6 @@ static void sorted_find_insert_binary(void **const array, size_t *const array_le
     }
 }
 
-static int compare_ints(const void *const a, const void *const b)
-{
-    return *(int *) a - *(int *) b;
-}
-
-static void sorted_find_insert_bsearchqsort(void **const array, size_t *const array_len, const size_t element_size, const void *const value, sorted_find_insert_action_t on_find, sorted_find_insert_action_t on_insert, const __compar_fn_t compare)
-{
-    if (*array_len == 0)
-    {
-        memcpy(*array = malloc(element_size), value, element_size);
-        on_insert(*array, element_size, value);
-        ++*array_len;
-        return;
-    }
-
-    int *const result = bsearch(value, *array, *array_len, element_size, compare);
-    if (result)
-    {
-        on_find(result, element_size, value);
-        return;
-    }
-    else
-    {
-        *array = realloc(*array, element_size * ++*array_len);
-        memcpy(*array + element_size * (*array_len - 1), value, element_size);
-        qsort(*array, *array_len, element_size, compare);
-        on_insert(bsearch(value, *array, *array_len, element_size, compare), element_size, value);
-        return;
-    }
-}
-
 static const int *result_element_int;
 
 static void list_on_find(void *const list_element, __attribute__((unused)) const size_t element_size, __attribute__((unused)) const void *const value)
@@ -144,12 +144,10 @@ static void list_on_insert(void *const list_element, const size_t element_size, 
 
 static inline void test_method_int(const char *const identifier, sorted_find_insert method, int *list, size_t list_len, const int value, const int *const expected_result, const size_t expected_result_len, const size_t expected_index)
 {
-    if (list == NULL)
+    if (list == NULL && list_len)
     {
-        if (list_len)
-        {
-            list = malloc(sizeof(int) * list_len);
-        }
+        list = malloc(sizeof(int) * list_len);
+
         for (size_t i = 0; i < list_len; ++i)
         {
             list[i] = i * 4;
