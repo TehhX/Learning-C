@@ -1,4 +1,5 @@
 // Linux and GCC only example
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -60,7 +61,6 @@ static void sorted_find_insert_bsearchqsort(void **const array, size_t *const ar
     if (result)
     {
         on_find(result, element_size, value);
-        return;
     }
     else
     {
@@ -68,7 +68,6 @@ static void sorted_find_insert_bsearchqsort(void **const array, size_t *const ar
         memcpy(*array + element_size * (*array_len - 1), value, element_size);
         qsort(*array, *array_len, element_size, compare);
         on_insert(bsearch(value, *array, *array_len, element_size, compare), element_size, value);
-        return;
     }
 }
 
@@ -130,6 +129,42 @@ static void sorted_find_insert_binary(void **const array, size_t *const array_le
     *array = realloc(*array, element_size * ++*array_len);
     memmove(*array + element_size * (low + 1), *array + element_size * low, element_size * (*array_len - low - 1));
     on_insert(*array + element_size * low, element_size, value);
+}
+
+static void sorted_find_insert_bsearch_linear(void **const array, size_t *const array_len, const size_t element_size, const void *const value, sorted_find_insert_action_t on_find, sorted_find_insert_action_t on_insert, const __compar_fn_t compare)
+{
+    if (*array_len == 0)
+    {
+        memcpy(*array = malloc(element_size), value, element_size);
+        on_insert(*array, element_size, value);
+        ++*array_len;
+        return;
+    }
+
+    int *const result = bsearch(value, *array, *array_len, element_size, compare);
+    if (result)
+    {
+        on_find(result, element_size, value);
+    }
+    else
+    {
+        *array = realloc(*array, element_size * ++*array_len);
+        for (size_t i = *array_len - 2; i != SIZE_MAX; --i)
+        {
+            if (compare(*array + element_size * i, value) < 0)
+            {
+                on_insert(*array + element_size * (i + 1), element_size, value);
+                return;
+            }
+            else
+            {
+                memcpy(*array + element_size * (i + 1), *array + element_size * i, element_size);
+            }
+        }
+
+        memcpy(*array + element_size, *array, element_size);
+        on_insert(*array, element_size, value);
+    }
 }
 
 static const int *result_element_int;
@@ -235,7 +270,8 @@ static void test_cases_int(const char *const method_identifier, sorted_find_inse
 
 int main()
 {
-    test_cases_int(       "Linear", sorted_find_insert_linear);
-    test_cases_int("Bsearch Qsort", sorted_find_insert_bsearchqsort);
-    test_cases_int(       "Binary", sorted_find_insert_binary);
+    test_cases_int(        "Linear", sorted_find_insert_linear);
+    test_cases_int( "Bsearch Qsort", sorted_find_insert_bsearchqsort);
+    test_cases_int(        "Binary", sorted_find_insert_binary);
+    test_cases_int("Bsearch Linear", sorted_find_insert_bsearch_linear);
 }
